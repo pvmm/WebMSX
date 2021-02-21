@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+    <head lang="en">
+
+        <meta charset="UTF-8">
+        <title>WebMSX bla</title>
+        <meta name="description" content="WebMSX - The online MSX emulator">
+
+    </head>
+
+    <body id="wmsx" style="margin: 0; padding: 0; background-color: black; margin-bottom: 0; overflow: hidden;"><!--
+     --><div id="wmsx-screen"></div><script src="wmsx.js"></script><!--
+     --><script>
+        // connection with main thread.
+        require('electron').ipcRenderer.on('click-menuitem', (event, message) => {
+           console.log(message)
+        })
+        </script>
+ --></body>
+
+</html>

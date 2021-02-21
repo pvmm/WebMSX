@@ -2,11 +2,17 @@
   "name": "WebMSX",
   "title": "WebMSX - The online MSX emulator",
   "version": "6.0.3",
+  "main": "./release/stable/6.0/electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "devDependencies": {
     "grunt": "",
     "grunt-contrib-clean": "",
     "grunt-contrib-concat": "",
     "grunt-contrib-uglify": "2.3.0",
-    "grunt-contrib-copy": ""
+    "grunt-contrib-copy": "",
+    "electron": "^11.3.0"
   }
 }

@@ -275,6 +275,15 @@ module.exports = function (grunt) {
         },
 
         copy: {
+            electron: {
+                files: [
+                    {src: "src/runtime/electron/index.html", dest: "release/" + releasePath + "/electron", expand: true, flatten: true, filter: "isFile"},
+                    {src: "src/runtime/electron/main.js", dest: "release/" + releasePath + "/electron", expand: true, flatten: true, filter: "isFile"},
+                    {src: "temp/wmsx.js", dest: "release/" + releasePath + "/electron", expand: true, flatten: true, filter: "isFile"},
+                    {src: "src/runtime/images/files/logo-icon192.png", dest: "release/" + releasePath + "/electron/images", expand: true, flatten: true, filter: "isFile"},
+                    {src: "src/runtime/images/files/logo-icon512.png", dest: "release/" + releasePath + "/electron/images", expand: true, flatten: true, filter: "isFile"}
+                ]
+            },
             standalone: {
                 files: [
                     {src: "temp/index.html", dest: "release/" + releasePath + "/standalone", expand: true, flatten: true, filter: "isFile"},
@@ -327,6 +336,7 @@ module.exports = function (grunt) {
         "concat:emuFinal_cbios",
         "concat:standalone",
         "concat:standalone_cbios",
+        "copy:electron",
         "copy:standalone",
         "copy:standalone_cbios",
         "copy:embedded",
