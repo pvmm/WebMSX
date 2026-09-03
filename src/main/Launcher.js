@@ -21,10 +21,6 @@ WMSX.start = function (machinePowerOn) {
         // Init preferences
         WMSX.userPreferences.load();
 
-        // Apply persisted OPLL engine preference
-        if (WMSX.userPreferences.current.opllUseWasm !== undefined)
-            WMSX.YM2413_USE_WASM = WMSX.userPreferences.current.opllUseWasm;
-
         // Build and start emulator
         if (machinePowerOn === undefined) machinePowerOn = WMSX.AUTO_POWER_ON_DELAY >= 0;
         WMSX.room = new wmsx.Room(WMSX.screenElement, machinePowerOn);

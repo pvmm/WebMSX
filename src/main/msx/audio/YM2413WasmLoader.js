@@ -1,5 +1,7 @@
 // Copyright 2015 by Paulo Augusto Peccin. See license.txt distributed with this file.
 
+// YM2413 FM Sound Chip - WASM (emu2413) implementation
+
 wmsx.YM2413WasmLoader = function() {
     "use strict";
 

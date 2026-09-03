@@ -42,24 +42,6 @@ wmsx.CartridgeMSXMUSIC = function(rom) {
         return 0xff;
     };
 
-    this.switchOpllEngine = function(useWasm) {
-        var wasConnected = machine !== null;
-        var regs = wasConnected ? opll.getRegisterValues() : null;
-        if (wasConnected) opll.disconnect(machine);
-        opll = useWasm ? new wmsx.YM2413WasmAudio("MSX-MUSIC") : new wmsx.YM2413Audio("MSX-MUSIC");
-        this.opll = opll;
-        if (wasConnected) {
-            opll.connect(machine);
-            if (regs) {
-                for (var r = 0; r < regs.length; r++) {
-                    opll.output7C(r);
-                    opll.output7D(regs[r]);
-                }
-            }
-        }
-    };
-
-
     var bytes;
     this.bytes = null;
 
@@ -68,7 +50,7 @@ wmsx.CartridgeMSXMUSIC = function(rom) {
     this.rom = null;
     this.format = wmsx.SlotFormats.MSXMUSIC;
 
-    var opll = WMSX.YM2413_USE_WASM ? new wmsx.YM2413WasmAudio("MSX-MUSIC") : new wmsx.YM2413Audio("MSX-MUSIC");
+    var opll = new wmsx.YM2413WasmAudio("MSX-MUSIC");
     this.opll = opll;
 
 

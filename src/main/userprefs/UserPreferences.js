@@ -138,8 +138,6 @@ WMSX.userPreferences.defaults = function() {
 
         audioBufferBase: -1,                // auto
 
-        opllUseWasm: false,
-
         netPlaySessionName: "",
         netPlayNick: "",
 

@@ -39,8 +39,6 @@ wmsx.DOMPeripheralControls = function(room) {
                 return screen.getControlReport(control);
             case pc.SPEAKER_BUFFER_TOGGLE:
                 return speaker.getControlReport(control);
-            case pc.AUDIO_OPLL_TOGGLE:
-                return { label: "OPLL: " + (WMSX.YM2413_USE_WASM ? "WASM" : "JS"), active: WMSX.YM2413_USE_WASM };
         }
         return { label: "Unknown", active: false };
     };
@@ -326,8 +324,6 @@ wmsx.DOMPeripheralControls = function(room) {
                 screen.saveScreenCapture(); break;
             case pc.SPEAKER_BUFFER_TOGGLE:
                 speaker.toggleBufferBaseSize(secPort); break;                       // secPort for dec
-            case pc.AUDIO_OPLL_TOGGLE:
-                toggleOpllEngine(secPort); break;
         }
         if (SCREEN_FIXED_SIZE) return;
         switch(control) {
@@ -354,19 +350,6 @@ wmsx.DOMPeripheralControls = function(room) {
         return false;
     };
     this.mediaChangeDisabledWarning = mediaChangeDisabledWarning;
-
-    function toggleOpllEngine(dec) {
-        WMSX.YM2413_USE_WASM = !WMSX.YM2413_USE_WASM;
-
-        var cart1 = cartridgeSlot.cartridgeInserted(0);
-        var cart2 = cartridgeSlot.cartridgeInserted(1);
-        if (cart1 && cart1.switchOpllEngine) cart1.switchOpllEngine(WMSX.YM2413_USE_WASM);
-        if (cart2 && cart2.switchOpllEngine) cart2.switchOpllEngine(WMSX.YM2413_USE_WASM);
-
-        monitor.showOSD("OPLL Engine: " + (WMSX.YM2413_USE_WASM ? "WASM (emu2413)" : "JS"), true);
-        WMSX.userPreferences.current.opllUseWasm = WMSX.YM2413_USE_WASM;
-        WMSX.userPreferences.setDirty();
-    }
 
     var initKeys = function() {
         var k = domKeys;
@@ -592,7 +575,6 @@ wmsx.DOMPeripheralControls = function(room) {
         pc.SCREEN_COLORS, pc.SCREEN_PALETTES,
 
         pc.SPEAKER_BUFFER_TOGGLE,
-        pc.AUDIO_OPLL_TOGGLE,
 
         pc.MACHINE_POWER_TOGGLE, pc.MACHINE_POWER_RESET,
 

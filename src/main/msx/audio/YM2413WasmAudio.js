@@ -1,7 +1,6 @@
 // Copyright 2015 by Paulo Augusto Peccin. See license.txt distributed with this file.
 
-// YM2413 FM Sound Chip - WASM (emu2413) wrapper
-// Drop-in replacement for YM2413Audio using wasm2413
+// YM2413 FM Sound Chip - WASM (emu2413) implementation
 
 wmsx.YM2413WasmAudio = function(pName) {
 "use strict";
@@ -14,6 +13,7 @@ wmsx.YM2413WasmAudio = function(pName) {
         var VOL = (WMSX.OPLL_VOL || "f").toUpperCase();
         var PAN = (WMSX.OPLL_PAN || "8").toUpperCase();
         VOLPAN = (VOL !== "F" || PAN !== "8");
+        initWasmOPLL();
     }
 
     this.connect = function(machine) {
@@ -22,7 +22,6 @@ wmsx.YM2413WasmAudio = function(pName) {
         machine.bus.connectOutputDevice(0x7c, this.output7C);
         machine.bus.connectOutputDevice(0x7d, this.output7D);
         audioSocket = machine.getAudioSocket();
-        if (!opll) initWasmOPLL();
         if (audioConnected) connectAudio();
     };
 
@@ -85,8 +84,7 @@ wmsx.YM2413WasmAudio = function(pName) {
 
     function registerWrite(reg, val) {
         register[reg] = val;
-        if (!opll) return;
-        opll.writeReg(reg, val);
+        if (opll) opll.writeReg(reg, val);
         if (reg === 0x0e) rhythmMode = (val & 0x20) !== 0;
     }
 
@@ -109,17 +107,9 @@ wmsx.YM2413WasmAudio = function(pName) {
     function replayRegisters() {
         if (!opll) return;
         for (var r = 0; r < register.length; r++) {
-            if (register[r] !== 0) {
-                opll.writeReg(r, register[r]);
-            }
+            if (register[r] !== 0) opll.writeReg(r, register[r]);
         }
     }
-
-    // Hot-swap support: replay all registers onto a new WASM OPLL
-    this.hotSwapToWasm = function(newOpll) {
-        opll = newOpll;
-        replayRegisters();
-    };
 
     // Save/load state
 
@@ -147,17 +137,6 @@ wmsx.YM2413WasmAudio = function(pName) {
         if (audioConnected) connectAudio();
     };
 
-    // Public access for hot-swap from JS YM2413Audio
-
-    this.getRegisterValues = function() {
-        return wmsx.Util.arrayCopy(register);
-    };
-
-    this.isRhythmMode = function() {
-        return rhythmMode;
-    };
-
-
     init();
 
 
@@ -180,11 +159,4 @@ wmsx.YM2413WasmAudio = function(pName) {
     var sampleResult = [ 0, 0 ];
     var sampleEmpty = [ 0, 0 ];
 
-};
-
-wmsx.YM2413WasmAudio.replayRegistersFrom = function(jsOpll, wasmOpll) {
-    var regs = jsOpll.getRegisterValues();
-    for (var r = 0; r < regs.length; r++) {
-        if (regs[r] !== 0) wasmOpll.writeReg(r, regs[r]);
-    }
 };
