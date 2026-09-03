@@ -39,8 +39,9 @@ wmsx.CartridgeFMPAC = function(rom) {
         updateFMEnable();
     };
 
-    this.disconnect = function(machine) {
-        opll.disconnect(machine);
+    this.disconnect = function(pMachine) {
+        opll.disconnect(pMachine);
+        machine = null;
     };
 
     this.dataModified = function() {
@@ -122,6 +123,23 @@ wmsx.CartridgeFMPAC = function(rom) {
         }
     }
 
+    this.switchOpllEngine = function(useWasm) {
+        var wasConnected = machine !== null && (fmEnable & 1);
+        var regs = wasConnected ? opll.getRegisterValues() : null;
+        if (wasConnected) opll.disconnect(machine);
+        opll = useWasm ? new wmsx.YM2413WasmAudio("FM-PAC") : new wmsx.YM2413Audio("FM-PAC");
+        this.opll = opll;
+        if (wasConnected) {
+            opll.connect(machine);
+            if (regs) {
+                for (var r = 0; r < regs.length; r++) {
+                    opll.output7C(r);
+                    opll.output7D(regs[r]);
+                }
+            }
+        }
+    };
+
     function loadSRAM(name, content) {
         sramContentName = name;
         var start = wmsx.CartridgePAC.DATA_FILE_IDENTIFIER.length;
@@ -144,12 +162,12 @@ wmsx.CartridgeFMPAC = function(rom) {
     var fmEnable;
     var bankOffset;
 
-    var machine;
+    var machine = null;
 
     this.rom = null;
     this.format = wmsx.SlotFormats.FMPAC;
 
-    var opll = new wmsx.YM2413Audio("FM-PAC");
+    var opll = WMSX.YM2413_USE_WASM ? new wmsx.YM2413WasmAudio("FM-PAC") : new wmsx.YM2413Audio("FM-PAC");
     this.opll = opll;
 
 

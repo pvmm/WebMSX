@@ -27,6 +27,8 @@ module.exports = function (grunt) {
         "src/main/msx/audio/SCCIAudio.js",
         "src/main/msx/audio/YM2413Tables.js",
         "src/main/msx/audio/YM2413Audio.js",
+        "src/main/msx/audio/YM2413WasmLoader.js",
+        "src/main/msx/audio/YM2413WasmAudio.js",
         "src/main/msx/audio/OPL4WaveTables.js",
         "src/main/msx/audio/OPL4Audio.js",
         "src/main/msx/audio/OPL4AudioFM.js",

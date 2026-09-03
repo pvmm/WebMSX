@@ -1719,6 +1719,9 @@ wmsx.CanvasDisplay = function(room, mainElement) {
         if (!isMobileDevice)
         menu.push({ label: "Defaults",       clickModif: KEY_SHIFT_MASK, control: wmsx.PeripheralControls.SCREEN_DEFAULTS/*,          fullScreenHidden: true*/ });
 
+        menu.push({ label: "", divider: true });
+        menu.push({ label: "OPLL Engine: " + (WMSX.YM2413_USE_WASM ? "WASM" : "JS"), clickModif: KEY_CTRL_MASK | KEY_ALT_MASK, control: wmsx.PeripheralControls.AUDIO_OPLL_TOGGLE });
+
         return menu;
     }
 

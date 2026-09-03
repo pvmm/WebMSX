@@ -13,12 +13,14 @@ wmsx.CartridgeMSXMUSIC = function(rom) {
         self.bytes = bytes;
     }
 
-    this.connect = function(machine) {
-        opll.connect(machine);
+    this.connect = function(pMachine) {
+        machine = pMachine;
+        opll.connect(pMachine);
     };
 
-    this.disconnect = function(machine) {
-        opll.disconnect(machine);
+    this.disconnect = function(pMachine) {
+        opll.disconnect(pMachine);
+        machine = null;
     };
 
     this.powerOn = function() {
@@ -40,14 +42,33 @@ wmsx.CartridgeMSXMUSIC = function(rom) {
         return 0xff;
     };
 
+    this.switchOpllEngine = function(useWasm) {
+        var wasConnected = machine !== null;
+        var regs = wasConnected ? opll.getRegisterValues() : null;
+        if (wasConnected) opll.disconnect(machine);
+        opll = useWasm ? new wmsx.YM2413WasmAudio("MSX-MUSIC") : new wmsx.YM2413Audio("MSX-MUSIC");
+        this.opll = opll;
+        if (wasConnected) {
+            opll.connect(machine);
+            if (regs) {
+                for (var r = 0; r < regs.length; r++) {
+                    opll.output7C(r);
+                    opll.output7D(regs[r]);
+                }
+            }
+        }
+    };
+
 
     var bytes;
     this.bytes = null;
 
+    var machine = null;
+
     this.rom = null;
     this.format = wmsx.SlotFormats.MSXMUSIC;
 
-    var opll = new wmsx.YM2413Audio("MSX-MUSIC");
+    var opll = WMSX.YM2413_USE_WASM ? new wmsx.YM2413WasmAudio("MSX-MUSIC") : new wmsx.YM2413Audio("MSX-MUSIC");
     this.opll = opll;
 
 

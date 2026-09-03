@@ -819,6 +819,21 @@ wmsx.YM2413Audio = function(pName) {
     };
 
 
+    // Hot-swap support: expose register state for replay on WASM OPLL
+
+    this.getRegisterValues = function() {
+        return wmsx.Util.arrayCopy(register);
+    };
+
+    this.isRhythmMode = function() {
+        return rhythmMode;
+    };
+
+    this.getRegisterAddress = function() {
+        return registerAddress;
+    };
+
+
     init();
 
     this.eval = function(str) {

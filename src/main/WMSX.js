@@ -47,6 +47,9 @@ WMSX = {
     NETPLAY_JOIN:                   "",                         // Join NetPlay! Session automatically
     NETPLAY_NICK:                   "",                         // NetPlay! Nickname, optional
 
+    // FM Sound Chip Engine
+    YM2413_USE_WASM:                   false,                     // false: JS YM2413, true: WASM YM2413 (emu2413)
+
     // Internal Machine configuration
     BIOS_SLOT:                      [0],                        // Slot to use when loading ROM of type
     CARTRIDGE1_SLOT:                [1],

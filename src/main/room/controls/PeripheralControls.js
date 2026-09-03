@@ -49,6 +49,8 @@ wmsx.PeripheralControls = {
 
     SPEAKER_BUFFER_TOGGLE: 400,
 
-    SCREEN_OPEN_NETPLAY: 500
+    SCREEN_OPEN_NETPLAY: 500,
+
+    AUDIO_OPLL_TOGGLE: 600
 
 };
