@@ -137,9 +137,6 @@ wmsx.YM2413WasmAudio = function(pName) {
         if (audioConnected) connectAudio();
     };
 
-    init();
-
-
     var name;
     var opll = null;
 
@@ -158,5 +155,7 @@ wmsx.YM2413WasmAudio = function(pName) {
 
     var sampleResult = [ 0, 0 ];
     var sampleEmpty = [ 0, 0 ];
+
+    init();
 
 };

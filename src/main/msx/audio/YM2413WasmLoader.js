@@ -49,7 +49,7 @@ wmsx.YM2413WasmLoader = function() {
                 return lastSlash >= 0 ? src.substring(0, lastSlash + 1) : "";
             }
         }
-        return "";
+        return "./";     // standalone: JS is inlined, resolve wasm2413.mjs relative to the page
     }
 
     var wasmModule = null;
