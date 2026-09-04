@@ -31,31 +31,42 @@ ROM formats (available as `CARTRIDGE1_FORMAT`, see README ~line 150): `Normal`,
 `ASCII8`, `ASCII16`, `Konami`, `KonamiSCC`, `KonamiSCCI`, `FMPAC`, `FMPAK`, `MSXDOS2`,
 `Manbow2`, `Dooly`, `MegaRAM`, `Majutsushi`, `RType`, `CrossBlaim` ... etc.
 
-## THE big gotcha: get MSX-MUSIC explicitly
+## MSX-MUSIC presence & toggling
 
-`README.md` (line 185) says MSX-MUSIC is **"Default in Machine: MSX2 or higher"** — i.e.
-the YM2413 *hardware* is normally present on MSX2+ machines. **In practice for
-deterministic headless testing this was NOT enough**: after booting an MSX2+ machine the
-machine had an audio socket but **zero YM2413 instances** and `devicesOutputPorts[0x7c]`
-held the "missing device" handler. Adding the preset made the YM2413 appear reliably.
+`README.md` (line 185) says MSX-MUSIC is **"Default in Machine: MSX2 or higher"** — the
+YM2413 is normally present on MSX2+ machines. That is **confirmed empirically**: the
+default MSX2+ base config auto-includes it (`src/main/WMSXCBios.js` line 273:
+`_INCLUDE: "_BASE, RAMMAPPER, MSXMUSIC"`), so on the default MSX2+ machine the OPLL IS
+instantiated with no preset at all. (An earlier note claiming "zero instances without
+`PRESETS=MSXMUSIC`" was from a test on a different/default machine config and is **wrong** —
+the default MSX2+ does include it.)
 
-To explicitly enable MSX-MUSIC, add the preset to the URL (do this even on MSX2+ to be safe):
+To toggle it explicitly from the URL:
+- `PRESETS=MSXMUSIC`   → force-enable (no-op if already default-present)
+- `PRESETS=NOMSXMUSIC` → **disable** (defined `WMSXCBios.js` line 176:
+  `NOMSXMUSIC: { "EXTENSIONS.MSXMUSIC": 0 }`)
+
+This is the cleanest way to compare OPLL vs PSG fallback for the same game: with
+`NOMSXMUSIC` the machine has no OPLL cartridge, so a game that supports it (e.g. Undeadline)
+falls back to the PSG.
 
 ```
-?CARTRIDGE1_URL=/path/to/game.rom&PRESETS=MSXMUSIC
+?CARTRIDGE1_URL=/path/to/game.rom&PRESETS=MSXMUSIC     # OPLL music
+?CARTRIDGE1_URL=/path/to/game.rom&PRESETS=NOMSXMUSIC   # PSG fallback music
 ```
 
 (`PRESETS` is also aliased as `P` / `PRESET`; `PRESETS` accepts a comma-separated list,
 e.g. `?P=MSXMUSIC,RAM128`. `CARTRIDGE1_URL` is aliased `ROM`/`CART`/`CART1`; see
 `src/main/Configurator.js` `abbreviations` map, ~line 443.)
 
-**Symptom when this is missing:** the game boots fine but the YM2413 is never
-instantiated. Introspection shows:
-- `machine.bus.devicesOutputPorts[0x7c]` is the "missing device" handler (not the YM2413)
-- no `YM2413WasmAudio` instances exist anywhere
-- zero register writes, zero `nextSample()` calls → "silent"
+**To confirm which sound device is actually driving music**, sample the live instances:
+- MSX-MUSIC present → `machine.bus.devicesOutputPorts[0x7c]` is the YM2413 output handler
+  and a `YM2413WasmAudio` instance exists
+- `NOMSXMUSIC` → no `YM2413WasmAudio`, `0x7c` is the DeviceMissing handler, and the PSG
+  (`machine.psg.getAudioChannel()`) produces the music's `nextSample()` values
 
-This is **not** a driver bug. Always confirm the YM2413 is present before testing MSX-MUSIC.
+Always confirm which device is present before testing — a "silent" OPLL is usually just
+`NOMSXMUSIC` being active, not a driver bug.
 
 ## Browser globals (easy to get wrong)
 
@@ -108,7 +119,10 @@ address, `0x7d` writes data. Defined in `src/main/msx/machine/BUS.js`.)
 
 ## Sampling actual audio
 
-Drive `nextSample()` directly on the live `opll`; YM2413 sample rate is **49780 Hz**.
+`YM2413WasmAudio.nextSample()` returns the **raw** wasm OPLL output (no volume applied —
+volume is applied once by the `AudioSignal`, matching the WebMSX convention used by the
+PSG/SCC). The raw OPLL per-channel peak is ~±2048 (`lookup_exp_table` peaks ±4095, halved
+by `_MO`), though real music mixes well below that. Sample rate is **49780 Hz**.
 
 ```js
 const N = 49780;                     // ~1 second
@@ -121,12 +135,31 @@ for (let i = 0; i < N; i++) {
   if (v > peak) peak = v;
 }
 // nz  -> how many non-zero samples (silence if 0)
-// peak-> > 1.0 flags potential clipping (should be well under 1)
+// peak-> raw OPLL amplitude (a few hundred to ~2000 for music)
 // avg -> sum / N
 ```
 
-Reference result for **Undeadline** (T&E Soft) MSX-MUSIC after ~40s of play:
-`nonzero 49546/49780`, `peak 0.0047`, `avg 0.00059` → active, in-range, no clipping.
+To get the level that actually reaches the mix buffer, multiply the raw peak by the
+driver's effect voice volume chain: `rawPeak * VOLUME * 1.2 * WMSX.VOL`, where
+`VOLUME = 0.68 * (1.58 / 9 / 2048)`. (This mirrors `AudioSignal.init()`: buffer sample =
+`nextSample() * volume`, and `volume = VOLUME * 1.2 * WMSX.VOL`.)
+
+**Volume-fix note (critical):** an earlier version applied VOLUME **twice** — inside
+`nextSample()` (`s[0]*VOLUME`) *and* in `AudioSignal` (`volume = VOLUME*1.2*WMSX.VOL`),
+which squared the volume and made the OPLL ~silent. Fix: `nextSample()` returns raw, and
+VOLUME lives only in the `AudioSignal`. Don't re-introduce the multiply inside
+`nextSample()`.
+
+Reference result for **Undeadline** (T&E Soft) — same game, both paths, raw `nextSample()`
+then final-mix estimate at ~40s of play (`WMSX.VOL=1`):
+
+| Music path | device | raw peak | final mix peak |
+|-----------|--------|---------:|---------------:|
+| `PRESETS=MSXMUSIC`  | OPLL | ~1300-1626 | **~0.09-0.11** |
+| `PRESETS=NOMSXMUSIC`| PSG  | 0.013      | **~0.010** |
+
+So the OPLL is clearly audible and roughly ~10x above the same game's PSG fallback.
+Final peaks are well under 1.0 → no clipping, healthy headroom.
 
 ## Title-screen / boot beep confusion
 

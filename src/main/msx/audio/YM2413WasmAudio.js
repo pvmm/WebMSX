@@ -62,11 +62,11 @@ wmsx.YM2413WasmAudio = function(pName) {
         if (!opll) return VOLPAN ? sampleEmpty : 0;
         if (VOLPAN) {
             var s = opll.calcStereo();
-            sampleResult[0] = s[0] * VOLUME;
-            sampleResult[1] = s[1] * VOLUME;
+            sampleResult[0] = s[0];
+            sampleResult[1] = s[1];
             return sampleResult;
         }
-        return opll.calc() * VOLUME;
+        return opll.calc();
     };
 
     function connectAudio() {
@@ -150,7 +150,7 @@ wmsx.YM2413WasmAudio = function(pName) {
 
     var VOLPAN;
 
-    var VOLUME = 0.68 * (1.58 / 9 / 32768);      // WASM OPLL_calc() returns 16-bit samples (±32768)
+    var VOLUME = 0.68 * (1.58 / 9 / 2048);      // Wasm OPLL per-channel peak ~±2048 (int16 type, but lookup_exp_table peaks ±4095 halved by _MO; original JS driver peaked ±256). Applied once by AudioSignal (volume *= 1.2 * WMSX.VOL), NOT inside nextSample().
     var SAMPLE_RATE = 49780;
     var CLOCK = 3579545;         // NTSC colorburst * 2
 
