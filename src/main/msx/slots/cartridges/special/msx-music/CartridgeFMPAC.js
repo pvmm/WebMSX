@@ -39,8 +39,9 @@ wmsx.CartridgeFMPAC = function(rom) {
         updateFMEnable();
     };
 
-    this.disconnect = function(machine) {
-        opll.disconnect(machine);
+    this.disconnect = function(pMachine) {
+        opll.disconnect(pMachine);
+        machine = null;
     };
 
     this.dataModified = function() {
@@ -144,12 +145,12 @@ wmsx.CartridgeFMPAC = function(rom) {
     var fmEnable;
     var bankOffset;
 
-    var machine;
+    var machine = null;
 
     this.rom = null;
     this.format = wmsx.SlotFormats.FMPAC;
 
-    var opll = new wmsx.YM2413Audio("FM-PAC");
+    var opll = new wmsx.YM2413WasmAudio("FM-PAC");
     this.opll = opll;
 
 

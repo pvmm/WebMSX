@@ -13,12 +13,14 @@ wmsx.CartridgeMSXMUSIC = function(rom) {
         self.bytes = bytes;
     }
 
-    this.connect = function(machine) {
-        opll.connect(machine);
+    this.connect = function(pMachine) {
+        machine = pMachine;
+        opll.connect(pMachine);
     };
 
-    this.disconnect = function(machine) {
-        opll.disconnect(machine);
+    this.disconnect = function(pMachine) {
+        opll.disconnect(pMachine);
+        machine = null;
     };
 
     this.powerOn = function() {
@@ -40,14 +42,15 @@ wmsx.CartridgeMSXMUSIC = function(rom) {
         return 0xff;
     };
 
-
     var bytes;
     this.bytes = null;
+
+    var machine = null;
 
     this.rom = null;
     this.format = wmsx.SlotFormats.MSXMUSIC;
 
-    var opll = new wmsx.YM2413Audio("MSX-MUSIC");
+    var opll = new wmsx.YM2413WasmAudio("MSX-MUSIC");
     this.opll = opll;
 
 
