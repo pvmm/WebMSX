@@ -86,6 +86,7 @@ wmsx.YM2413WasmAudio = function(pName) {
         register[reg] = val;
         if (opll) opll.writeReg(reg, val);
         if (reg === 0x0e) rhythmMode = (val & 0x20) !== 0;
+        if (!audioConnected) connectAudio();
     }
 
     function initWasmOPLL() {
@@ -149,7 +150,7 @@ wmsx.YM2413WasmAudio = function(pName) {
 
     var VOLPAN;
 
-    var VOLUME = 0.68 * (1.58 / 9 / 256);
+    var VOLUME = 0.68 * (1.58 / 9 / 32768);      // WASM OPLL_calc() returns 16-bit samples (±32768)
     var SAMPLE_RATE = 49780;
     var CLOCK = 3579545;         // NTSC colorburst * 2
 
