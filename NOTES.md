@@ -168,15 +168,52 @@ Wait long enough (user used ~40 s) for the game to actually sequence MSX-MUSIC
 registers, then sample. A real game produces a *sustained* run of non-zero samples,
 not a one-shot blip.
 
-## Test harness (headless)
+## Test harness (headless) — the one way that works
 
-1. Copy a built standalone release (`release/stable/6.0/standalone/{index.html,wasm2413.*,images/}`)
-   and the game ROM into a temp dir; serve with `python3 -m http.server <port>`.
-2. Playwright (chromium, headless):
-   `page.goto('http://127.0.0.1:<port>/index.html?CARTRIDGE1_URL=/game.rom&PRESETS=MSXMUSIC')`.
-   `serviceWorkers: 'block'` in the context avoids the WebMSX cache.manifest.
-3. `await page.waitForTimeout(...)` the desired boot/music lead time, then run the
-   `findOpll` + sampling snippet via `page.evaluate`.
+**Setup (once per session):**
+1. Copy a built standalone release and the game ROM into a temp dir:
+   ```bash
+   T=/tmp/opencode/webmsx-test
+   mkdir -p "$T"
+   cp -r webmsx.git/release/stable/6.0/standalone/* "$T/"
+   cp /path/to/game.rom "$T/game.rom"
+   cp wasm2413/dist/wasm2413.mjs wasm2413/dist/wasm2413.wasm "$T/"
+   ```
+2. **Start the HTTP server fully detached from the shell** so it does NOT die when the
+   console/agent session closes. A plain `python3 -m http.server &` gets killed with the
+   shell. The reliable incantation is:
+   ```bash
+   cd "$T" && setsid nohup python3 -m http.server 8766 >/tmp/opencode/serve.log 2>&1 < /dev/null & disown
+   ```
+   - `setsid` → new session, fully detached (survives parent shell exit)
+   - `nohup ... < /dev/null` → no SIGHUP and no stdin wait
+   - `& disown` → removed from the shell's job table
+   - **Note:** the shell command may still *block/hit the tool timeout* even though the
+     server is fine — that is expected. Just `disown` before it; the server keeps running.
+3. Verify it is alive in a **separate** command:
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" --max-time 3 "http://127.0.0.1:8766/"
+   # -> 200
+   ```
+   Kill when done: `pkill -f "http.server 8766"` (or `pkill -f 'http.server 8766'`).
+
+**Run the test (Playwright, chromium, headless):**
+```bash
+node test.js    # require playwright from: /home/pedro/.npm/_npx/e41f203b7505f1fb/node_modules/playwright
+```
+- Playwright is installed in that `~/.npm/_npx/...` cache — `require()` it by absolute path
+  (it is NOT in the project `node_modules`, and `npm root -g` has no playwright).
+- `page.goto('http://127.0.0.1:8766/index.html?CARTRIDGE1_URL=/game.rom&PRESETS=MSXMUSIC')`
+  with `browser.newContext({ serviceWorkers: 'block' })` (avoids the WebMSX cache.manifest).
+- `await page.waitForTimeout(40000)` (boot + music lead time), then run the `findOpll` +
+  `nextSample()` sampling via `page.evaluate` (snippets above).
+- The goto URL string contains `&` — quote the whole URL in the `page.goto(...)` call.
+
+**The recurring trap:** the server kept "dying" over and over. It wasn't dying — it was
+being killed **with the shell** because a plain background `&` (or a backgrounded process
+whose stdout is still attached to the tool's pipe) is terminated when that shell command
+ends/times out. `setsid nohup ... < /dev/null & disown` is the fix; it is fully detached
+and survives the console closing. Use that exact command every time.
 
 ### Injectable-counter caveat
 

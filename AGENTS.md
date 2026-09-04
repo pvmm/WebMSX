@@ -55,11 +55,23 @@ Reach the machine via `window.WMSX.room.machine`, NOT `wmsx.room` / `wmsx.WMSX.r
 
 ## Testing workflow (headless)
 
-1. Copy a built standalone release + the game ROM to a temp dir; serve with
-   `python3 -m http.server <port>`.
-2. Playwright chromium, context `serviceWorkers:'block'` (avoids WebMSX cache.manifest).
-3. `page.goto('http://127.0.0.1:<port>/index.html?CARTRIDGE1_URL=/game.rom&PRESETS=MSXMUSIC')`.
-4. Wait the boot/music lead time, run the `findOpll` + `nextSample()` sampling via `page.evaluate`.
+1. Copy a built standalone release + the game ROM to a temp dir.
+2. **Start the HTTP server fully detached so it survives the console closing** — this is
+   the one gotcha that burned us repeatedly. Use exactly:
+   ```bash
+   cd "$T" && setsid nohup python3 -m http.server 8766 >/tmp/opencode/serve.log 2>&1 < /dev/null & disown
+   ```
+   (`setsid`+`nohup`+`< /dev/null`+`& disown`). The shell command may still block/times-out
+   — that's expected; the server keeps running. Verify it's alive in a separate command with
+   `curl`; kill with `pkill -f "http.server 8766"`.
+3. Playwright chromium, context `serviceWorkers:'block'` (avoids WebMSX cache.manifest).
+   `require('playwright')` by absolute path from the `~/.npm/_npx/<hash>/node_modules` cache
+   (not in project node_modules).
+4. `page.goto('http://127.0.0.1:8766/index.html?CARTRIDGE1_URL=/game.rom&PRESETS=MSXMUSIC')`
+   — quote the URL (it contains `&`).
+5. Wait the boot/music lead time (~40s), run the `findOpll` + `nextSample()` sampling via `page.evaluate`.
+
+See NOTES.md "Test harness (headless) — the one way that works" for the full detail.
 
 ## Reference numbers (Undeadline, T&E Soft)
 
